@@ -4,8 +4,6 @@ import me.hydos.forgeplus.mald.logic.MalderLoader;
 import me.hydos.forgeplus.mald.logic.MalderPatcher;
 import me.hydos.forgeplus.mald.logic.read.InjectTarget;
 import me.hydos.forgeplus.util.FileSystemUtil;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +21,7 @@ public class ForgeModifier {
         this.malderLoader = malderLoader;
     }
 
-    public void doTestTitleScreenMod() {
+    public void applyMalders() {
         Path librariesDir = this.minecraftDir.resolve("libraries");
         Path forgePatches = librariesDir.resolve("net/minecraftforge/forge/1.18.2-40.0.52/forge-1.18.2-40.0.52-client.jar");
         Path backupForgePatches = librariesDir.resolve("net/minecraftforge/forge/1.18.2-40.0.52/forge-1.18.2-40.0.52-client.jar.backup");
@@ -88,21 +86,5 @@ public class ForgeModifier {
             return patcher.patch(bytes, InjectTarget.END);
         }
         return bytes;
-    }
-
-    private MethodVisitor e(MethodVisitor parent) {
-        return new MethodVisitor(Opcodes.ASM9, parent) {
-            @Override
-            public void visitInsn(int opcode) {
-                if (opcode == Opcodes.RETURN) {
-                    visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-                    visitLdcInsn("This is a cool test");
-                    visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
-
-//                    this.visitMethodInsn(Opcodes.INVOKESTATIC, "net/minecraft/client/gui/GuiComponent", "m_93215_", "(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;III)V", false);
-                }
-                super.visitInsn(opcode);
-            }
-        };
     }
 }

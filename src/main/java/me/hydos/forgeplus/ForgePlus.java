@@ -16,6 +16,6 @@ public class ForgePlus {
         }
 
         new ForgeModifier(Paths.get("C:/Users/hayde/AppData/Roaming/.minecraft"), malderLoader)
-                .doTestTitleScreenMod();
+                .applyMalders();
     }
 }
