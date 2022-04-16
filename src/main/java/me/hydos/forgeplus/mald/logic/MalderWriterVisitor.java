@@ -9,11 +9,13 @@ public class MalderWriterVisitor extends ClassVisitor {
 
     private final ClassNode malderClass;
     private final Malder malder;
+    private final InjectTarget target;
 
     public MalderWriterVisitor(ClassVisitor parent, ClassNode malderClass, Malder malder, InjectTarget target) {
         super(Opcodes.ASM9, parent);
         this.malderClass = malderClass;
         this.malder = malder;
+        this.target = target;
     }
 
     @Override
@@ -25,7 +27,7 @@ public class MalderWriterVisitor extends ClassVisitor {
                 if (!method.name.equals("<init>")) {
                     if (method.invisibleAnnotations.get(0).values.get(1).equals(name)) {
                         method.localVariables.remove(0);
-                        return new MethodWriterVisitor(parent, method);
+                        return new MethodWriterVisitor(parent, method, target);
                     }
                 }
             }
@@ -36,15 +38,17 @@ public class MalderWriterVisitor extends ClassVisitor {
     private static class MethodWriterVisitor extends MethodVisitor {
 
         public final MethodNode method;
+        private final InjectTarget target;
 
-        protected MethodWriterVisitor(MethodVisitor methodVisitor, MethodNode method) {
+        protected MethodWriterVisitor(MethodVisitor methodVisitor, MethodNode method, InjectTarget target) {
             super(Opcodes.ASM9, methodVisitor);
             this.method = method;
+            this.target = target;
         }
 
         @Override
         public void visitInsn(int opcode) {
-            if (opcode == Opcodes.RETURN) {
+            if (opcode == Opcodes.RETURN && target == InjectTarget.END) {
                 for (AbstractInsnNode instruction : this.method.instructions) {
                     if (instruction instanceof LabelNode label) {
                         visitLabel(label.getLabel());
