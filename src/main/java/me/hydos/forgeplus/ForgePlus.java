@@ -15,7 +15,13 @@ public class ForgePlus {
             throw new RuntimeException("Failed to load malders", e);
         }
 
-        new ForgeModifier(Paths.get("C:/Users/hayde/AppData/Roaming/.minecraft"), malderLoader)
-                .applyMalders();
+        ForgePatcher patcher = new ForgePatcher(Paths.get("C:/Users/hayde/AppData/Roaming/.minecraft"), malderLoader, "1.18.2-40.0.52");
+
+        try {
+            patcher.remapToIntermediary();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to remap to intermediary.", e);
+        }
+        patcher.applyMaldersToForgePatches();
     }
 }

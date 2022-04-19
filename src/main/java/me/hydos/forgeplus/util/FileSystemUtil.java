@@ -29,18 +29,18 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystemAlreadyExistsException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
 public final class FileSystemUtil {
+    private static final Map<String, String> JFS_ARGS_CREATE = Map.of("create", "true");
+    private static final Map<String, String> JFS_ARGS_EMPTY = Collections.emptyMap();
+
     public record Delegate(FileSystem fs, boolean owner) implements AutoCloseable, Supplier<FileSystem> {
+
+
         public byte[] readAllBytes(String path) throws IOException {
             Path fsPath = get().getPath(path);
 
@@ -66,13 +66,11 @@ public final class FileSystemUtil {
         public FileSystem get() {
             return fs;
         }
+
     }
 
     private FileSystemUtil() {
     }
-
-    private static final Map<String, String> jfsArgsCreate = Map.of("create", "true");
-    private static final Map<String, String> jfsArgsEmpty = Collections.emptyMap();
 
     public static Delegate getJarFileSystem(File file, boolean create) throws IOException {
         return getJarFileSystem(file.toURI(), create);
@@ -96,7 +94,9 @@ public final class FileSystemUtil {
         }
 
         try {
-            return new Delegate(FileSystems.newFileSystem(jarUri, create ? jfsArgsCreate : jfsArgsEmpty), true);
+            return new Delegate(FileSystems.newFileSystem(jarUri, create ? JFS_ARGS_CREATE : JFS_ARGS_EMPTY), true);
+        } catch (ProviderNotFoundException e) {
+            throw new RuntimeException("Couldn't find jar provider. Are you sure your loading a Jar?", e);
         } catch (FileSystemAlreadyExistsException e) {
             return new Delegate(FileSystems.getFileSystem(jarUri), false);
         } catch (IOException e) {
