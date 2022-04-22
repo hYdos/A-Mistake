@@ -6,6 +6,10 @@ import net.fabricmc.mappingio.format.Tiny2Writer;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.minecraftforge.installertools.ConsoleTool;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -13,85 +17,90 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class MappingUtils {
-    public static Path getSrgMappings() throws IOException {
-        Path srgToIntermediaryMappings = ForgePatcher.WORK_DIR.resolve("srgToIntermediary.tiny");
-        if (!Files.exists(srgToIntermediaryMappings)) {
-            // Create SRG mappings
+
+    public static void fillInFieldSignatures(MemoryMappingTree mappings, Path jar, int namespaceId) throws IOException {
+        try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jar); Stream<Path> classes = Files.walk(fs.get().getPath("/"))) {
+            classes.filter(path -> path.getFileName().toString().endsWith(".class")).forEach(path -> {
+                try {
+                    ClassReader reader = new ClassReader(Files.readAllBytes(path));
+                    ClassVisitor visitor = new FieldSignatureFillingVisitor(mappings, namespaceId);
+                    reader.accept(visitor, 0);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+    }
+
+    private static class FieldSignatureFillingVisitor extends ClassVisitor {
+
+        private final MemoryMappingTree mappings;
+        private final int namespaceId;
+        private String className;
+
+        protected FieldSignatureFillingVisitor(MemoryMappingTree mappings, int namespaceId) {
+            super(Opcodes.ASM9);
+            this.mappings = mappings;
+            this.namespaceId = namespaceId;
+        }
+
+        @Override
+        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+            this.className = name;
+            super.visit(version, access, name, signature, superName, interfaces);
+        }
+
+        @Override
+        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+            MappingTree.FieldMapping field;
+            if(namespaceId == -1) {
+                // Src Target Namespace
+                field = this.mappings.getField(this.className, name, descriptor);
+            } else {
+                // Dst Target Namespace
+                field = this.mappings.getField(this.className, name, descriptor, this.namespaceId);
+            }
+            System.out.println(field);
+            return super.visitField(access, name, descriptor, signature, value);
+        }
+    }
+
+    /**
+     * Generates official -> srg -> intermediary
+     * @return A path to a tinyv2 file containing mappings
+     * @throws IOException File IO may fail.
+     */
+    public static Path getFullMappings() throws IOException {
+        Path fullMappingsPath = ForgePatcher.WORK_DIR.resolve("complete.tiny");
+
+        if (!Files.exists(fullMappingsPath)) {
             // TODO: pull from http://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_config/1.18.2/mcp_config-1.18.2.zip
             // TODO: and find official file. Its in one of the libraries folders.
             // TODO: for now assume its already extracted in the work directory
             Path mcpConfig = ForgePatcher.WORK_DIR.resolve("joined.tsrg");
             Path official = Paths.get("C:/Users/hayde/AppData/Roaming/.minecraft/libraries/net/minecraft/client/1.18.2-20220404.173914/client-1.18.2-20220404.173914-mappings.txt");
-            Path officialToSrg = createSrgMappings(mcpConfig, official);
+            Path officialToSrg = createForgeMappings(mcpConfig, official);
             Path intermediaries = ForgePatcher.WORK_DIR.resolve("intermediary.tiny");
 
+            MemoryMappingTree fullMappings = new MemoryMappingTree();
+            MappingReader.read(officialToSrg, fullMappings);
+            MappingReader.read(intermediaries, fullMappings);
 
-            MemoryMappingTree intermediaryMappings = new MemoryMappingTree();
-            MappingReader.read(intermediaries, intermediaryMappings);
-
-            MemoryMappingTree srgMappings = new MemoryMappingTree();
-            MappingReader.read(officialToSrg, srgMappings);
-
-            MemoryMappingTree srgToIntermediary = new MemoryMappingTree();
-            srgToIntermediary.visitNamespaces("srg", List.of("intermediary"));
-
-            for (MappingTree.ClassMapping srgMapping : ((MappingTree) srgMappings).getClasses()) {
-                MappingTree.ClassMapping intermediaryMapping = intermediaryMappings.getClass(srgMapping.getSrcName());
-                int leftNamespaceId = srgMappings.getNamespaceId("left");
-                int srgNamespaceId = srgMappings.getNamespaceId("right");
-                int intermediaryNamespaceId = intermediaryMappings.getNamespaceId("intermediary");
-
-                String srgClassName = srgMapping.getDstName(srgNamespaceId);
-                srgToIntermediary.visitClass(srgClassName);
-
-                MappingTree.ClassMapping mergedClass = ((MappingTree) srgToIntermediary).getClass(srgClassName);
-                mergedClass.setDstName(intermediaryMapping != null ? intermediaryMapping.getDstName(intermediaryNamespaceId) : srgMapping.getSrcName(), srgToIntermediary.getNamespaceId("intermediary"));
-
-                for (MappingTree.FieldMapping field : srgMapping.getFields()) {
-                    MappingTree.FieldMapping fieldIntermediaryMapping = null;
-                    if (intermediaryMapping != null) {
-                        fieldIntermediaryMapping = intermediaryMapping.getField(field.getSrcName(), field.getSrcDesc(), leftNamespaceId);
-                    }
-
-                    String srgFieldName = field.getDstName(srgNamespaceId);
-                    String srgFieldDesc = field.getDstDesc(srgNamespaceId);
-                    String intermediaryFieldName = intermediaryMapping != null && fieldIntermediaryMapping != null ? fieldIntermediaryMapping.getDstName(intermediaryNamespaceId) : field.getSrcName();
-                    srgToIntermediary.visitField(
-                            srgFieldName,
-                            ""
-                    );
-                    MappingTree.FieldMapping fieldMapping = srgToIntermediary.getField(mergedClass.getSrcName(), srgFieldName, srgFieldDesc);
-                    fieldMapping.setDstName(intermediaryFieldName, srgNamespaceId);
-                }
-
-                for (MappingTree.MethodMapping method : srgMapping.getMethods()) {
-                    MappingTree.MethodMapping methodIntermediaryMapping = null;
-                    if (intermediaryMapping != null) {
-                        methodIntermediaryMapping = intermediaryMapping.getMethod(method.getSrcName(), method.getSrcDesc(), leftNamespaceId);
-                    }
-
-                    String srgFieldName = method.getDstName(srgNamespaceId);
-                    String srgFieldDesc = method.getDstDesc(srgNamespaceId);
-                    String intermediaryName = intermediaryMapping != null && methodIntermediaryMapping != null ? methodIntermediaryMapping.getDstName(intermediaryNamespaceId) : method.getSrcName();
-                    srgToIntermediary.visitMethod(srgFieldName, srgFieldDesc);
-
-                    MappingTree.MethodMapping methodMapping = srgToIntermediary.getMethod(mergedClass.getSrcName(), srgFieldName, srgFieldDesc);
-                    methodMapping.setDstName(intermediaryName, intermediaryNamespaceId);
-                }
-            }
-
-            try (Writer mappingWriter = Files.newBufferedWriter(srgToIntermediaryMappings)) {
-                srgToIntermediary.accept(new Tiny2Writer(mappingWriter, false));
+            try (Writer mappingWriter = Files.newBufferedWriter(fullMappingsPath)) {
+                fullMappings.accept(new Tiny2Writer(mappingWriter, false));
             }
         }
-
-        return srgToIntermediaryMappings;
+        return fullMappingsPath;
     }
 
-    private static Path createSrgMappings(Path mcpConfig, Path official) throws IOException {
-        Path mappings = ForgePatcher.WORK_DIR.resolve("officialToSrg.tsrg");
+    /**
+     * Forge's mappings are a combination of Mojmap Classes and Searge Fields and Methods.
+     */
+    private static Path createForgeMappings(Path mcpConfig, Path official) throws IOException {
+        Path mappings = ForgePatcher.WORK_DIR.resolve("forge.tsrg");
         ConsoleTool.main(new String[]{
                 "--task",
                 "MERGE_MAPPING",

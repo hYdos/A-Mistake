@@ -6,19 +6,12 @@ import me.hydos.forgeplus.mald.logic.MalderPatcher;
 import me.hydos.forgeplus.mald.logic.read.InjectTarget;
 import me.hydos.forgeplus.util.FileSystemUtil;
 import me.hydos.forgeplus.util.MappingUtils;
-import net.fabricmc.mappingio.MappingReader;
-import net.fabricmc.mappingio.format.Tiny2Writer;
-import net.fabricmc.mappingio.tree.MappingTree;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.Main;
-import net.minecraftforge.installertools.ConsoleTool;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.stream.Stream;
 
 @SuppressWarnings("ClassCanBeRecord")
@@ -89,7 +82,7 @@ public class ForgePatcher {
         }
     }
     private void backupAndRemapJar(Path inJar, Path outJar) throws IOException {
-        Path srgToIntermediaryMappings = MappingUtils.getSrgMappings();
+        Path srgToIntermediaryMappings = MappingUtils.getFullMappings();
         Path backupPath = inJar.getParent().resolve(inJar.getFileName().toString().replace(".jar", ".intermediary-backup.jar"));
 
         if (!Files.exists(backupPath)) {
@@ -117,7 +110,7 @@ public class ForgePatcher {
                                 // Hope it's an AccessTransformer
                                 AccessTransformer at = AccessTransformer.read(path);
                                 System.out.println("Remapping Access Widener");
-                                at.remap(MappingUtils.getSrgMappings());
+                                at.remap(MappingUtils.getFullMappings());
                                 System.out.println("Overwriting old Access Widener");
                                 Files.delete(path);
                                 at.write(path);
