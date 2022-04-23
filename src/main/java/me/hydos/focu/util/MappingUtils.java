@@ -1,6 +1,6 @@
-package me.hydos.forgeplus.util;
+package me.hydos.focu.util;
 
-import me.hydos.forgeplus.ForgePatcher;
+import me.hydos.focu.ForgePatcher;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.format.Tiny2Writer;
 import net.fabricmc.mappingio.tree.MappingTree;
@@ -16,7 +16,6 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.stream.Stream;
 
 public class MappingUtils {

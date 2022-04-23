@@ -1,7 +1,7 @@
-package me.hydos.forgeplus.mald.logic;
+package me.hydos.focu.mald.logic;
 
-import me.hydos.forgeplus.mald.logic.read.InjectTarget;
-import me.hydos.forgeplus.mald.logic.read.Malder;
+import me.hydos.focu.mald.logic.read.InjectTarget;
+import me.hydos.focu.mald.logic.read.Malder;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;

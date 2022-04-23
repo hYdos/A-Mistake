@@ -1,4 +1,4 @@
-package me.hydos.forgeplus.accesstransformer;
+package me.hydos.focu.accesstransformer;
 
 public enum Access {
     PRIVATE("private"), PROTECTED("protected"), PACKAGE_PRIVATE("default"), PUBLIC("public");

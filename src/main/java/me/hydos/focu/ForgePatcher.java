@@ -1,11 +1,11 @@
-package me.hydos.forgeplus;
+package me.hydos.focu;
 
-import me.hydos.forgeplus.accesstransformer.AccessTransformer;
-import me.hydos.forgeplus.mald.logic.MalderLoader;
-import me.hydos.forgeplus.mald.logic.MalderPatcher;
-import me.hydos.forgeplus.mald.logic.read.InjectTarget;
-import me.hydos.forgeplus.util.FileSystemUtil;
-import me.hydos.forgeplus.util.MappingUtils;
+import me.hydos.focu.accesstransformer.AccessTransformer;
+import me.hydos.focu.mald.logic.MalderLoader;
+import me.hydos.focu.mald.logic.MalderPatcher;
+import me.hydos.focu.mald.logic.read.InjectTarget;
+import me.hydos.focu.util.FileSystemUtil;
+import me.hydos.focu.util.MappingUtils;
 import net.fabricmc.tinyremapper.Main;
 
 import java.io.IOException;
@@ -42,7 +42,13 @@ public class ForgePatcher {
         backupAndRemapJar(clientDir.resolve("client-1.18.2-20220404.173914-srg.jar"));
     }
 
-    public void applyMaldersToForgePatches() {
+    public void apply() {
+        try {
+            remapToIntermediary();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         Path librariesDir = this.minecraftDir.resolve("libraries");
         Path forgePatches = librariesDir.resolve("net/minecraftforge/forge/1.18.2-40.0.52/forge-1.18.2-40.0.52-client.jar");
         Path forgeIntermediary = forgePatches.getParent().resolve("forge-intermediary.jar");

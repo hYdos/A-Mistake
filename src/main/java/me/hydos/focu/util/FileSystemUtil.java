@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package me.hydos.forgeplus.util;
+package me.hydos.focu.util;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package me.hydos.forgeplus.mald;
+package me.hydos.focu.mald;
 
 public @interface Malder {
     String value();

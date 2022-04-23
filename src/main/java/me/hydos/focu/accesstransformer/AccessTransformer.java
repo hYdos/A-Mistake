@@ -1,4 +1,4 @@
-package me.hydos.forgeplus.accesstransformer;
+package me.hydos.focu.accesstransformer;
 
 import net.fabricmc.mappingio.format.Tiny2Reader;
 import net.fabricmc.mappingio.tree.MappingTree;

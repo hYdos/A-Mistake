@@ -1,4 +1,4 @@
-package me.hydos.forgeplus.mald.logic;
+package me.hydos.focu.mald.logic;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
