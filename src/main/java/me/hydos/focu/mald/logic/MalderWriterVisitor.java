@@ -1,5 +1,6 @@
 package me.hydos.focu.mald.logic;
 
+import me.hydos.focu.ForgePatcher;
 import me.hydos.focu.mald.logic.read.InjectTarget;
 import me.hydos.focu.mald.logic.read.Malder;
 import org.objectweb.asm.*;
@@ -12,7 +13,7 @@ public class MalderWriterVisitor extends ClassVisitor {
     private final InjectTarget target;
 
     public MalderWriterVisitor(ClassVisitor parent, ClassNode malderClass, Malder malder, InjectTarget target) {
-        super(Opcodes.ASM9, parent);
+        super(ForgePatcher.ASM_VERSION, parent);
         this.malderClass = malderClass;
         this.malder = malder;
         this.target = target;
@@ -41,7 +42,7 @@ public class MalderWriterVisitor extends ClassVisitor {
         private final InjectTarget target;
 
         protected MethodWriterVisitor(MethodVisitor methodVisitor, MethodNode method, InjectTarget target) {
-            super(Opcodes.ASM9, methodVisitor);
+            super(ForgePatcher.ASM_VERSION, methodVisitor);
             this.method = method;
             this.target = target;
         }

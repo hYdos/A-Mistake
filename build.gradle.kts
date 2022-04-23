@@ -12,9 +12,10 @@ repositories {
 }
 
 dependencies {
-    implementation("net.fabricmc:tiny-remapper:0.8.1")
+    implementation("net.fabricmc:tiny-remapper:0.8.2")
     implementation("net.fabricmc:mapping-io:0.3.0")
     implementation ("net.minecraftforge:installertools:1.2.10")
+    implementation ("net.minecraftforge:ForgeAutoRenamingTool:0.1.22")
 
     implementation("org.ow2.asm:asm:9.3")
     implementation("org.ow2.asm:asm-analysis:9.3")

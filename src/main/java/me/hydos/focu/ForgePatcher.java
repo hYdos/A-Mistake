@@ -4,9 +4,11 @@ import me.hydos.focu.accesstransformer.AccessTransformer;
 import me.hydos.focu.mald.logic.MalderLoader;
 import me.hydos.focu.mald.logic.MalderPatcher;
 import me.hydos.focu.mald.logic.read.InjectTarget;
+import me.hydos.focu.providers.ForgeProvider;
 import me.hydos.focu.util.FileSystemUtil;
 import me.hydos.focu.util.MappingUtils;
 import net.fabricmc.tinyremapper.Main;
+import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,15 +18,14 @@ import java.util.stream.Stream;
 
 @SuppressWarnings("ClassCanBeRecord")
 public class ForgePatcher {
+    public static final int ASM_VERSION = Opcodes.ASM9;
     public static final Path WORK_DIR = Paths.get(".work");
-    public final Path minecraftDir;
+    public final ForgeProvider forge;
     public final MalderLoader malderLoader;
-    private final String forgeVersion;
 
-    public ForgePatcher(Path minecraftDir, MalderLoader malderLoader, String forgeVersion) {
-        this.minecraftDir = minecraftDir;
+    public ForgePatcher(ForgeProvider forge, MalderLoader malderLoader) {
+        this.forge = forge;
         this.malderLoader = malderLoader;
-        this.forgeVersion = forgeVersion;
 
         try {
             Files.createDirectories(WORK_DIR);
@@ -34,12 +35,10 @@ public class ForgePatcher {
     }
 
     public void remapToIntermediary() throws IOException {
-        Path librariesDir = this.minecraftDir.resolve("libraries");
-        Path forgeDir = librariesDir.resolve("net/minecraftforge/forge/" + forgeVersion);
-        Path clientDir = librariesDir.resolve("net/minecraft/client/1.18.2-20220404.173914/");
-
-        backupAndRemapJar(forgeDir.resolve("forge-" + forgeVersion + "-universal.jar"));
-        backupAndRemapJar(clientDir.resolve("client-1.18.2-20220404.173914-srg.jar"));
+        for (Path target : this.forge.targets()) {
+            System.out.println("Remapping " + target.getFileName().toString());
+            backupAndRemapJar(target);
+        }
     }
 
     public void apply() {
@@ -48,7 +47,7 @@ public class ForgePatcher {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
+/*
         Path librariesDir = this.minecraftDir.resolve("libraries");
         Path forgePatches = librariesDir.resolve("net/minecraftforge/forge/1.18.2-40.0.52/forge-1.18.2-40.0.52-client.jar");
         Path forgeIntermediary = forgePatches.getParent().resolve("forge-intermediary.jar");
@@ -85,10 +84,11 @@ public class ForgePatcher {
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to create output jar!", e);
-        }
+        }*/
     }
+
     private void backupAndRemapJar(Path inJar, Path outJar) throws IOException {
-        Path srgToIntermediaryMappings = MappingUtils.getFullMappings();
+        Path srgToIntermediaryMappings = MappingUtils.getFullMappings(this.forge.minecraftSrg());
         Path backupPath = inJar.getParent().resolve(inJar.getFileName().toString().replace(".jar", ".intermediary-backup.jar"));
 
         if (!Files.exists(backupPath)) {
@@ -100,8 +100,7 @@ public class ForgePatcher {
                     outJar.toAbsolutePath().toString(),
                     srgToIntermediaryMappings.toAbsolutePath().toString(),
                     "srg",
-                    "intermediary",
-                    "--fixPackageAccess"
+                    "intermediary"
             });
 
             try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(outJar); Stream<Path> files = Files.walk(fs.get().getPath("/"))) {
@@ -116,7 +115,7 @@ public class ForgePatcher {
                                 // Hope it's an AccessTransformer
                                 AccessTransformer at = AccessTransformer.read(path);
                                 System.out.println("Remapping Access Widener");
-                                at.remap(MappingUtils.getFullMappings());
+                                at.remap(srgToIntermediaryMappings);
                                 System.out.println("Overwriting old Access Widener");
                                 Files.delete(path);
                                 at.write(path);

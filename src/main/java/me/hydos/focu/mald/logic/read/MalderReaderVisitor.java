@@ -1,5 +1,6 @@
 package me.hydos.focu.mald.logic.read;
 
+import me.hydos.focu.ForgePatcher;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -11,7 +12,7 @@ public class MalderReaderVisitor extends ClassVisitor {
     private final MethodAnnotationVisitor methodAnnotationVisitor;
 
     public MalderReaderVisitor() {
-        super(Opcodes.ASM9);
+        super(ForgePatcher.ASM_VERSION);
         this.annotationVisitor = new TargetClassAnnotationVisitor();
         this.methodAnnotationVisitor = new MethodAnnotationVisitor(this.annotationVisitor);
     }
@@ -35,7 +36,7 @@ public class MalderReaderVisitor extends ClassVisitor {
         private final AnnotationVisitor annotationVisitor;
 
         protected MethodAnnotationVisitor(AnnotationVisitor visitor) {
-            super(Opcodes.ASM9);
+            super(ForgePatcher.ASM_VERSION);
             this.annotationVisitor = visitor;
         }
 
@@ -50,7 +51,7 @@ public class MalderReaderVisitor extends ClassVisitor {
         public Malder malder = new Malder();
 
         protected TargetClassAnnotationVisitor() {
-            super(Opcodes.ASM9);
+            super(ForgePatcher.ASM_VERSION);
         }
 
         // FIXME: assumptions bad. Please fix them soon

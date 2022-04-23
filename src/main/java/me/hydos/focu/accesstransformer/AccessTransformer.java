@@ -107,7 +107,7 @@ public class AccessTransformer {
                     this.fieldTransformers.put(fieldTransform, access);
                 } else {
                     MappingTree.FieldMapping fieldMapping = getField(classMapping, fieldTransform.field());
-                    this.fieldTransformers.put(new FieldTransform(classMapping.getDstName(intermediary), fieldMapping.getSrcName(), fieldTransform.removeFinal()), access);
+                    this.fieldTransformers.put(new FieldTransform(classMapping.getDstName(intermediary), fieldMapping.getDstName(intermediary), fieldTransform.removeFinal()), access);
                 }
             });
 
@@ -118,7 +118,7 @@ public class AccessTransformer {
                     this.methodTransformers.put(methodTransform, access);
                 } else {
                     MappingTree.MethodMapping methodMapping = getMethod(classMapping, methodTransform.methodName());
-                    this.methodTransformers.put(new MethodTransform(classMapping.getDstName(intermediary), methodMapping.getDstDesc(intermediary), remapMethodDesc(srgMappings, methodTransform.methodSig()), methodTransform.removeFinal()), access);
+                    this.methodTransformers.put(new MethodTransform(classMapping.getDstName(intermediary), methodMapping.getDstName(intermediary), methodMapping.getDstDesc(intermediary), methodTransform.removeFinal()), access);
                 }
             });
         }
@@ -126,7 +126,7 @@ public class AccessTransformer {
 
     private MappingTree.FieldMapping getField(MappingTree.ClassMapping classMapping, String field) {
         for (MappingTree.FieldMapping fieldMapping : classMapping.getFields()) {
-            if (field.equals(fieldMapping.getSrcDesc())) {
+            if (field.equals(fieldMapping.getDstName(1))) {
                 return fieldMapping;
             }
         }
@@ -135,7 +135,7 @@ public class AccessTransformer {
 
     private MappingTree.MethodMapping getMethod(MappingTree.ClassMapping classMapping, String methodName) {
         for (MappingTree.MethodMapping methodMapping : classMapping.getMethods()) {
-            if (methodName.equals(methodMapping.getSrcDesc())) {
+            if (methodName.equals(methodMapping.getDstName(1))) {
                 return methodMapping;
             }
         }
